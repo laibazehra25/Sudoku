@@ -1,0 +1,1509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Sudoku Game</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #312e81 100%);
+            position: relative;
+            overflow-x: hidden;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+        
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 50% 50%, rgba(59,130,246,0.1) 0%, transparent 50%);
+            z-index: 0;
+        }
+        
+        .floating-orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(60px);
+            animation: float 6s ease-in-out infinite;
+            z-index: 1;
+        }
+        
+        .orb-1 {
+            top: 10%;
+            left: 10%;
+            width: min(200px, 20vw);
+            height: min(200px, 20vw);
+            background: rgba(59, 130, 246, 0.1);
+            animation-delay: 0s;
+        }
+        
+        .orb-2 {
+            bottom: 10%;
+            right: 10%;
+            width: min(300px, 30vw);
+            height: min(300px, 30vw);
+            background: rgba(79, 70, 229, 0.1);
+            animation-delay: 2s;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) scale(1); }
+            50% { transform: translateY(-20px) scale(1.1); }
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.05); }
+        }
+        
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-10px) scale(1.1); }
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0) scale(1); }
+            25% { transform: translateX(-5px) scale(1.05); }
+            75% { transform: translateX(5px) scale(1.05); }
+        }
+        
+        .container {
+            position: relative;
+            z-index: 10;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+            padding: 40px;
+            width: auto;
+            max-width: 500px;
+        }
+        
+        .title {
+            font-size: 2.5rem;
+            font-weight: 900;
+            text-align: center;
+            background: linear-gradient(45deg, #60a5fa, #818cf8, #c084fc);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 30px;
+        }
+        
+        .section {
+            margin-bottom: 25px;
+        }
+        
+        .section-label {
+            color: rgba(255, 255, 255, 0.9);
+            font-weight: bold;
+            font-size: 1.1rem;
+            margin-bottom: 12px;
+            display: block;
+        }
+        
+        .button-grid {
+            display: grid;
+            gap: 10px;
+            grid-template-columns: repeat(3, 1fr);
+        }
+        
+        .option-button {
+            padding: 14px;
+            border-radius: 14px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.8);
+            font-weight: bold;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: capitalize;
+            touch-action: manipulation;
+        }
+        
+        .option-button:hover, .option-button:active {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.05);
+        }
+        
+        .option-button.selected {
+            background: linear-gradient(45deg, #3b82f6, #4f46e5);
+            border-color: #60a5fa;
+            color: white;
+            transform: scale(1.05);
+            box-shadow: 0 10px 20px rgba(59, 130, 246, 0.3);
+        }
+        
+        .primary-button, .secondary-button {
+            width: 100%;
+            padding: 14px;
+            border-radius: 14px;
+            border: none;
+            color: white;
+            font-weight: 900;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 18px;
+            touch-action: manipulation;
+        }
+        
+        .primary-button {
+            background: linear-gradient(45deg, #10b981, #059669);
+        }
+        
+        .primary-button:hover, .primary-button:active {
+            background: linear-gradient(45deg, #059669, #047857);
+            transform: scale(1.05);
+            box-shadow: 0 10px 20px rgba(16, 185, 129, 0.3);
+        }
+        
+        .secondary-button {
+            background: linear-gradient(45deg, #f59e0b, #d97706);
+        }
+        
+        .secondary-button:hover, .secondary-button:active {
+            background: linear-gradient(45deg, #d97706, #b45309);
+            transform: scale(1.05);
+            box-shadow: 0 10px 20px rgba(245, 158, 11, 0.3);
+        }
+        
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding: 16px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        
+        .header-left, .header-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: nowrap;
+        }
+        
+        .header-info, .timer {
+            color: white;
+            font-weight: bold;
+            white-space: nowrap;
+            font-size: 0.9rem;
+        }
+        
+        .header-info {
+            background: linear-gradient(45deg, #60a5fa, #818cf8);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        
+        .timer {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: white;
+            font-weight: bold;
+            white-space: nowrap;
+            font-size: 0.9rem;
+            background: rgba(52, 211, 153, 0.1);
+            padding: 8px 12px;
+            border-radius: 20px;
+            border: 2px solid rgba(16, 185, 129, 0.3);
+        }
+        
+        .stopwatch-icon {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #10b981;
+            border-radius: 50%;
+            position: relative;
+            background: linear-gradient(135deg, #d1fae5, #34d399);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .stopwatch-icon::before {
+            content: '';
+            width: 1px;
+            height: 6px;
+            background: #047857;
+            position: absolute;
+            top: 2px;
+            transform-origin: bottom;
+            animation: tick 1s linear infinite;
+        }
+        
+        .stopwatch-icon::after {
+            content: '';
+            width: 3px;
+            height: 3px;
+            background: #047857;
+            border-radius: 50%;
+            position: absolute;
+        }
+        
+        @keyframes tick {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .timer-text {
+            background: linear-gradient(45deg, #34d399, #10b981);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            font-family: 'Courier New', monospace;
+            font-weight: 900;
+            letter-spacing: 1px;
+        }
+        
+        .lives-container {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+            font-size: 0.9rem;
+        }
+        
+        .life-heart {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+        
+        .life-heart.active {
+            background: linear-gradient(45deg, #f87171, #dc2626);
+            box-shadow: 0 2px 8px rgba(248, 113, 113, 0.5);
+        }
+        
+        .life-heart.inactive {
+            background: rgba(156, 163, 175, 0.5);
+        }
+        
+        .menu-button, .hint-button {
+            padding: 10px 16px;
+            border-radius: 10px;
+            border: none;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+            font-size: 0.85rem;
+            touch-action: manipulation;
+        }
+        
+        .menu-button {
+            background: linear-gradient(45deg, #64748b, #475569);
+        }
+        
+        .menu-button:hover, .menu-button:active {
+            background: linear-gradient(45deg, #475569, #334155);
+            transform: scale(1.05);
+        }
+        
+        .hint-button {
+            background: linear-gradient(45deg, #f59e0b, #d97706);
+        }
+        
+        .hint-button:hover:not(:disabled), .hint-button:active:not(:disabled) {
+            background: linear-gradient(45deg, #d97706, #b45309);
+            transform: scale(1.05);
+        }
+        
+        .hint-button:disabled {
+            background: rgba(156, 163, 175, 0.5);
+            color: rgba(156, 163, 175, 0.8);
+            cursor: not-allowed;
+        }
+        
+        .game-board {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 25px;
+        }
+        
+        .sudoku-grid {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(20px);
+            border-radius: 18px;
+            padding: 16px;
+            border: 4px solid rgba(79, 70, 229, 0.5);
+            box-shadow: 0 25px 50px rgba(79, 70, 229, 0.3);
+            display: grid;
+            gap: 2px;
+        }
+        
+        .sudoku-cell {
+            background: linear-gradient(135deg, #ffffff, #f1f5f9, #e2e8f0);
+            border: 1px solid rgba(79, 70, 229, 0.3);
+            text-align: center;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            outline: none;
+            color: #334155;
+            touch-action: manipulation;
+            -webkit-appearance: none;
+            -moz-appearance: textfield;
+        }
+        
+        .sudoku-cell::-webkit-outer-spin-button,
+        .sudoku-cell::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        
+        .sudoku-cell:focus, .sudoku-cell:active {
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.6);
+            transform: scale(1.05);
+        }
+        
+        .sudoku-cell.initial {
+            background: linear-gradient(135deg, #ddd6fe, #c7d2fe, #a5b4fc);
+            color: #4338ca;
+            cursor: not-allowed;
+        }
+        
+        .sudoku-cell.locked {
+            background: linear-gradient(135deg, #d1fae5, #a7f3d0, #86efac);
+            color: #047857;
+            cursor: not-allowed;
+        }
+        
+        .sudoku-cell.selected {
+            background: linear-gradient(135deg, #dbeafe, #bfdbfe, #93c5fd);
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.6);
+            transform: scale(1.05);
+        }
+        
+        .sudoku-cell.wrong {
+            background: #dc2626 !important;
+            color: white !important;
+            animation: shake 0.6s ease-in-out;
+            transform: scale(1.05);
+        }
+        
+        .sudoku-cell.correct {
+            background: #10b981 !important;
+            color: white !important;
+            animation: bounce 0.6s ease-in-out;
+            transform: scale(1.1);
+        }
+        
+        .sudoku-cell.hint {
+            background: #f59e0b !important;
+            color: #92400e !important;
+            animation: pulse 0.6s ease-in-out;
+            transform: scale(1.05);
+        }
+        
+        .thick-border-right {
+            border-right: 4px solid #4f46e5 !important;
+        }
+        
+        .thick-border-bottom {
+            border-bottom: 4px solid #4f46e5 !important;
+        }
+        
+        .number-input {
+            display: flex;
+            justify-content: center;
+        }
+        
+        .number-panel {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border-radius: 18px;
+            padding: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+            width: 100%;
+            max-width: 450px;
+        }
+        
+        .selection-info {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.9);
+            font-weight: bold;
+            margin-bottom: 16px;
+            font-size: 1rem;
+        }
+        
+        .selection-info.selected {
+            background: linear-gradient(45deg, #60a5fa, #818cf8);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        
+        .number-grid {
+            display: grid;
+            gap: 10px;
+            justify-items: center;
+        }
+        
+        .number-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 14px;
+            border: 2px solid #60a5fa;
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.8), rgba(79, 70, 229, 0.8));
+            color: white;
+            font-weight: 900;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            touch-action: manipulation;
+        }
+        
+        .number-btn:hover:not(:disabled), .number-btn:active:not(:disabled) {
+            background: linear-gradient(135deg, #3b82f6, #4f46e5);
+            transform: scale(1.1);
+            box-shadow: 0 8px 20px rgba(59, 130, 246, 0.3);
+        }
+        
+        .number-btn:disabled {
+            background: rgba(156, 163, 175, 0.3);
+            border-color: rgba(156, 163, 175, 0.5);
+            color: rgba(156, 163, 175, 0.5);
+            cursor: not-allowed;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+            
+            .glass-panel {
+                padding: 20px;
+                max-width: 95vw;
+            }
+            
+            .title {
+                font-size: 1.8rem;
+            }
+            
+            .game-header {
+                flex-direction: column;
+                text-align: center;
+                gap: 8px;
+                padding: 12px;
+            }
+            
+            .header-left, .header-right {
+                justify-content: center;
+                width: 100%;
+                gap: 6px;
+                flex-wrap: nowrap;
+            }
+            
+            .header-info, .timer-text, .lives-container {
+                font-size: 0.75rem;
+            }
+            
+            .menu-button, .hint-button {
+                padding: 6px 10px;
+                font-size: 0.7rem;
+            }
+            
+            .stopwatch-icon {
+                width: 16px;
+                height: 16px;
+            }
+            
+            .timer {
+                padding: 6px 8px;
+            }
+            
+            .life-heart {
+                width: 8px;
+                height: 8px;
+            }
+            
+            .number-btn {
+                width: 40px;
+                height: 40px;
+                font-size: 0.9rem;
+            }
+            
+            .number-grid {
+                grid-template-columns: repeat(auto-fit, minmax(40px, 1fr));
+                max-width: 280px;
+                margin: 0 auto;
+                gap: 6px;
+            }
+            
+            .number-panel {
+                padding: 16px;
+            }
+            
+            .selection-info {
+                font-size: 0.85rem;
+                margin-bottom: 12px;
+            }
+            
+            /* Mobile leaderboard fixes */
+            .leaderboard-grid {
+                display: grid;
+                grid-template-columns: 40px 50px 60px 70px 40px 60px;
+                gap: 4px;
+                font-size: 0.7rem;
+                overflow-x: auto;
+                width: 100%;
+            }
+            
+            .leaderboard-header {
+                padding: 8px 4px;
+                font-size: 0.65rem;
+                font-weight: bold;
+            }
+            
+            .leaderboard-row {
+                padding: 8px 4px;
+                font-size: 0.65rem;
+                margin: 4px 0;
+            }
+            
+            .leaderboard-scroll {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .glass-panel {
+                padding: 15px;
+                max-width: 98vw;
+            }
+            
+            .title {
+                font-size: 1.6rem;
+                margin-bottom: 20px;
+            }
+            
+            .section {
+                margin-bottom: 20px;
+            }
+            
+            .section-label {
+                font-size: 0.95rem;
+                margin-bottom: 8px;
+            }
+            
+            .option-button {
+                padding: 10px;
+                font-size: 0.8rem;
+            }
+            
+            .primary-button, .secondary-button {
+                padding: 12px;
+                font-size: 0.95rem;
+                margin-top: 15px;
+            }
+            
+            /* Extra small mobile leaderboard */
+            .leaderboard-grid {
+                grid-template-columns: 35px 45px 55px 65px 35px 55px;
+                gap: 2px;
+                font-size: 0.65rem;
+            }
+            
+            .leaderboard-header, .leaderboard-row {
+                padding: 6px 2px;
+            }
+        }
+        
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="floating-orb orb-1"></div>
+    <div class="floating-orb orb-2"></div>
+    
+    <div id="app" class="container"></div>
+
+    <script>
+        class SudokuGame {
+            constructor() {
+                this.gameState = 'menu';
+                this.gridSize = 4;
+                this.difficulty = 'easy';
+                this.board = [];
+                this.solution = [];
+                this.initialBoard = [];
+                this.lives = 5;
+                this.hintsUsed = 0;
+                this.maxHints = 10;
+                this.animatingCells = new Set();
+                this.selectedCell = null;
+                this.lockedCells = new Set();
+                this.startTime = null;
+                this.completionTime = null;
+                this.currentTime = 0;
+                this.leaderboard = JSON.parse(localStorage.getItem('sudokuLeaderboard') || '[]');
+                this.timerInterval = null;
+                
+                this.render();
+            }
+            
+            getBoxDimensions(size) {
+                switch(size) {
+                    case 4: return { rows: 2, cols: 2 };
+                    case 6: return { rows: 2, cols: 3 };
+                    case 9: return { rows: 3, cols: 3 };
+                    default: return { rows: 3, cols: 3 };
+                }
+            }
+            
+            formatTime(seconds) {
+                const mins = Math.floor(seconds / 60);
+                const secs = seconds % 60;
+                return `${mins}:${secs.toString().padStart(2, '0')}`;
+            }
+            
+            startTimer() {
+                if (this.timerInterval) clearInterval(this.timerInterval);
+                this.timerInterval = setInterval(() => {
+                    if (this.gameState === 'playing' && this.startTime) {
+                        this.currentTime = Math.floor((Date.now() - this.startTime) / 1000);
+                        const timerEl = document.getElementById('timer');
+                        if (timerEl) {
+                            timerEl.textContent = this.formatTime(this.currentTime);
+                        }
+                    }
+                }, 1000);
+            }
+            
+            stopTimer() {
+                if (this.timerInterval) {
+                    clearInterval(this.timerInterval);
+                    this.timerInterval = null;
+                }
+            }
+            
+            generateSolution(size) {
+                const maxAttempts = 50; // Increased attempts for better generation
+                
+                for (let attempt = 0; attempt < maxAttempts; attempt++) {
+                    const board = Array(size).fill().map(() => Array(size).fill(0));
+                    const { rows: boxRows, cols: boxCols } = this.getBoxDimensions(size);
+                    
+                    const isValid = (board, row, col, num) => {
+                        // Check row - ensure no duplicate in row
+                        for (let x = 0; x < size; x++) {
+                            if (board[row][x] === num) return false;
+                        }
+                        
+                        // Check column - ensure no duplicate in column
+                        for (let x = 0; x < size; x++) {
+                            if (board[x][col] === num) return false;
+                        }
+                        
+                        // Check box - ensure no duplicate in box
+                        const boxRow = Math.floor(row / boxRows) * boxRows;
+                        const boxCol = Math.floor(col / boxCols) * boxCols;
+                        
+                        for (let r = boxRow; r < boxRow + boxRows; r++) {
+                            for (let c = boxCol; c < boxCol + boxCols; c++) {
+                                if (board[r][c] === num) return false;
+                            }
+                        }
+                        return true;
+                    };
+                    
+                    const shuffle = (array) => {
+                        const newArray = [...array];
+                        for (let i = newArray.length - 1; i > 0; i--) {
+                            const j = Math.floor(Math.random() * (i + 1));
+                            [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+                        }
+                        return newArray;
+                    };
+                    
+                    const solve = (board) => {
+                        // Find empty cell with least possibilities for better efficiency
+                        let bestCell = null;
+                        let minPossibilities = size + 1;
+                        
+                        for (let row = 0; row < size; row++) {
+                            for (let col = 0; col < size; col++) {
+                                if (board[row][col] === 0) {
+                                    let possibilities = 0;
+                                    for (let num = 1; num <= size; num++) {
+                                        if (isValid(board, row, col, num)) {
+                                            possibilities++;
+                                        }
+                                    }
+                                    if (possibilities < minPossibilities) {
+                                        minPossibilities = possibilities;
+                                        bestCell = { row, col };
+                                    }
+                                    if (possibilities === 0) return false; // No valid moves
+                                }
+                            }
+                        }
+                        
+                        if (!bestCell) return true; // All cells filled
+                        
+                        const { row, col } = bestCell;
+                        const numbers = shuffle(Array.from({length: size}, (_, i) => i + 1));
+                        
+                        for (const num of numbers) {
+                            if (isValid(board, row, col, num)) {
+                                board[row][col] = num;
+                                if (solve(board)) return true;
+                                board[row][col] = 0; // Backtrack
+                            }
+                        }
+                        return false;
+                    };
+                    
+                    // Start with a completely random first row for variety
+                    const firstRowNumbers = shuffle(Array.from({length: size}, (_, i) => i + 1));
+                    for (let col = 0; col < size; col++) {
+                        board[0][col] = firstRowNumbers[col];
+                    }
+                    
+                    if (solve(board)) {
+                        // Additional validation to ensure no duplicates
+                        if (this.validateCompleteSolution(board, size)) {
+                            return board;
+                        }
+                    }
+                }
+                
+                // Fallback with guaranteed valid solution
+                return this.createValidFallbackBoard(size);
+            }
+            
+            // Validate that the complete solution has no duplicates
+            validateCompleteSolution(board, size) {
+                const { rows: boxRows, cols: boxCols } = this.getBoxDimensions(size);
+                
+                // Check all rows
+                for (let row = 0; row < size; row++) {
+                    const seen = new Set();
+                    for (let col = 0; col < size; col++) {
+                        const num = board[row][col];
+                        if (num < 1 || num > size || seen.has(num)) return false;
+                        seen.add(num);
+                    }
+                }
+                
+                // Check all columns
+                for (let col = 0; col < size; col++) {
+                    const seen = new Set();
+                    for (let row = 0; row < size; row++) {
+                        const num = board[row][col];
+                        if (seen.has(num)) return false;
+                        seen.add(num);
+                    }
+                }
+                
+                // Check all boxes
+                for (let boxRowStart = 0; boxRowStart < size; boxRowStart += boxRows) {
+                    for (let boxColStart = 0; boxColStart < size; boxColStart += boxCols) {
+                        const seen = new Set();
+                        for (let r = boxRowStart; r < boxRowStart + boxRows; r++) {
+                            for (let c = boxColStart; c < boxColStart + boxCols; c++) {
+                                const num = board[r][c];
+                                if (seen.has(num)) return false;
+                                seen.add(num);
+                            }
+                        }
+                    }
+                }
+                
+                return true;
+            }
+            
+            // Create a mathematically guaranteed valid fallback board
+            createValidFallbackBoard(size) {
+                const board = Array(size).fill().map(() => Array(size).fill(0));
+                const { rows: boxRows, cols: boxCols } = this.getBoxDimensions(size);
+                
+                // Create a valid pattern using Latin square approach
+                for (let row = 0; row < size; row++) {
+                    for (let col = 0; col < size; col++) {
+                        // Use a formula that guarantees no row/column duplicates
+                        let num = ((row * boxCols + Math.floor(row / boxRows) + col) % size) + 1;
+                        board[row][col] = num;
+                    }
+                }
+                
+                // Apply random number mapping to add variety
+                const mapping = {};
+                const numbers = Array.from({length: size}, (_, i) => i + 1);
+                for (let i = numbers.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [numbers[i], numbers[j]] = [numbers[j], numbers[i]];
+                }
+                
+                for (let i = 1; i <= size; i++) {
+                    mapping[i] = numbers[i - 1];
+                }
+                
+                // Apply the mapping
+                for (let row = 0; row < size; row++) {
+                    for (let col = 0; col < size; col++) {
+                        board[row][col] = mapping[board[row][col]];
+                    }
+                }
+                
+                return board;
+            }
+            
+            createPuzzle(solution, difficulty, size) {
+                const puzzle = solution.map(row => [...row]);
+                const totalCells = size * size;
+                
+                let cellsToRemove;
+                switch(difficulty) {
+                    case 'easy': cellsToRemove = Math.floor(totalCells * 0.4); break;
+                    case 'medium': cellsToRemove = Math.floor(totalCells * 0.55); break;
+                    case 'hard': cellsToRemove = Math.floor(totalCells * 0.65); break;
+                    default: cellsToRemove = Math.floor(totalCells * 0.4);
+                }
+                
+                const positions = [];
+                for (let i = 0; i < size; i++) {
+                    for (let j = 0; j < size; j++) {
+                        positions.push([i, j]);
+                    }
+                }
+                
+                for (let i = positions.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [positions[i], positions[j]] = [positions[j], positions[i]];
+                }
+                
+                for (let i = 0; i < cellsToRemove && i < positions.length; i++) {
+                    const [row, col] = positions[i];
+                    puzzle[row][col] = 0;
+                }
+                
+                return puzzle;
+            }
+            
+            getDifficultySettings(difficulty, size) {
+                const getBoxCount = (size) => {
+                    const { rows, cols } = this.getBoxDimensions(size);
+                    return (size / rows) * (size / cols);
+                };
+                
+                const boxCount = getBoxCount(size);
+                const baseHints = Math.max(1, Math.floor(boxCount * 0.7));
+                
+                switch(difficulty) {
+                    case 'easy': return { lives: 5, hints: baseHints + 1 };
+                    case 'medium': return { lives: 4, hints: baseHints };
+                    case 'hard': return { lives: 3, hints: Math.max(1, baseHints - 1) };
+                    default: return { lives: 5, hints: baseHints + 1 };
+                }
+            }
+            
+            startNewGame() {
+                this.solution = this.generateSolution(this.gridSize);
+                this.board = this.createPuzzle(this.solution, this.difficulty, this.gridSize);
+                this.initialBoard = this.board.map(row => [...row]);
+                const settings = this.getDifficultySettings(this.difficulty, this.gridSize);
+                this.lives = settings.lives;
+                this.maxHints = settings.hints;
+                this.hintsUsed = 0;
+                this.gameState = 'playing';
+                this.animatingCells.clear();
+                this.selectedCell = null;
+                this.lockedCells.clear();
+                this.startTime = Date.now();
+                this.completionTime = null;
+                this.currentTime = 0;
+                this.startTimer();
+                this.render();
+            }
+            
+            isValidMove(board, row, col, num, size) {
+                const { rows: boxRows, cols: boxCols } = this.getBoxDimensions(size);
+                
+                for (let x = 0; x < size; x++) {
+                    if (x !== col && board[row][x] === num) return false;
+                }
+                
+                for (let x = 0; x < size; x++) {
+                    if (x !== row && board[x][col] === num) return false;
+                }
+                
+                const boxRow = Math.floor(row / boxRows) * boxRows;
+                const boxCol = Math.floor(col / boxCols) * boxCols;
+                
+                for (let r = boxRow; r < boxRow + boxRows; r++) {
+                    for (let c = boxCol; c < boxCol + boxCols; c++) {
+                        if ((r !== row || c !== col) && board[r][c] === num) return false;
+                    }
+                }
+                
+                return true;
+            }
+            
+            handleCellClick(row, col) {
+                const cellKey = `${row}-${col}`;
+                if (this.initialBoard[row][col] !== 0 || this.lockedCells.has(cellKey)) return;
+                this.selectedCell = { row, col };
+                this.render();
+            }
+            
+            handleNumberInput(num) {
+                if (!this.selectedCell) return;
+                
+                const { row, col } = this.selectedCell;
+                const cellKey = `${row}-${col}`;
+                if (this.initialBoard[row][col] !== 0 || this.lockedCells.has(cellKey)) return;
+                
+                const newBoard = this.board.map(row => [...row]);
+                
+                if (num === 0) {
+                    newBoard[row][col] = 0;
+                    this.board = newBoard;
+                    this.render();
+                    return;
+                }
+                
+                if (num < 1 || num > this.gridSize) return;
+                
+                newBoard[row][col] = num;
+                
+                if (this.isValidMove(newBoard, row, col, num, this.gridSize)) {
+                    this.animatingCells.add(`${cellKey}-correct`);
+                    this.board = newBoard;
+                    this.lockedCells.add(cellKey);
+                    this.selectedCell = null;
+                    
+                    setTimeout(() => {
+                        this.animatingCells.delete(`${cellKey}-correct`);
+                        this.render();
+                    }, 800);
+                    
+                    const isComplete = newBoard.every((row, r) => 
+                        row.every((cell, c) => cell !== 0)
+                    );
+                    
+                    if (isComplete) {
+                        this.stopTimer();
+                        const endTime = Date.now();
+                        this.completionTime = Math.floor((endTime - this.startTime) / 1000);
+                        
+                        // Add to leaderboard
+                        const newEntry = {
+                            id: Date.now(),
+                            gridSize: this.gridSize,
+                            difficulty: this.difficulty,
+                            time: this.completionTime,
+                            hintsUsed: this.hintsUsed,
+                            date: new Date().toLocaleDateString()
+                        };
+                        
+                        this.leaderboard.push(newEntry);
+                        this.leaderboard.sort((a, b) => a.time - b.time);
+                        this.leaderboard = this.leaderboard.slice(0, 10);
+                        localStorage.setItem('sudokuLeaderboard', JSON.stringify(this.leaderboard));
+                        
+                        this.gameState = 'won';
+                    }
+                } else {
+                    this.animatingCells.add(`${cellKey}-wrong`);
+                    newBoard[row][col] = 0;
+                    this.board = newBoard;
+                    this.lives--;
+                    
+                    if (this.lives <= 0) {
+                        this.stopTimer();
+                        this.gameState = 'gameOver';
+                    }
+                    
+                    setTimeout(() => {
+                        this.animatingCells.delete(`${cellKey}-wrong`);
+                        this.render();
+                    }, 800);
+                }
+                
+                this.render();
+            }
+            
+            useHint() {
+                if (this.hintsUsed >= this.maxHints) return;
+                
+                const emptyCells = [];
+                for (let r = 0; r < this.gridSize; r++) {
+                    for (let c = 0; c < this.gridSize; c++) {
+                        const cellKey = `${r}-${c}`;
+                        if (this.board[r][c] === 0 && !this.lockedCells.has(cellKey)) {
+                            emptyCells.push([r, c]);
+                        }
+                    }
+                }
+                
+                if (emptyCells.length === 0) return;
+                
+                const randomCell = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+                const [row, col] = randomCell;
+                const cellKey = `${row}-${col}`;
+                
+                const newBoard = this.board.map(row => [...row]);
+                newBoard[row][col] = this.solution[row][col];
+                
+                this.board = newBoard;
+                this.hintsUsed++;
+                this.lockedCells.add(cellKey);
+                
+                this.animatingCells.add(`${cellKey}-hint`);
+                setTimeout(() => {
+                    this.animatingCells.delete(`${cellKey}-hint`);
+                    this.render();
+                }, 800);
+                
+                this.render();
+            }
+            
+            getCellClass(row, col) {
+                const { rows: boxRows, cols: boxCols } = this.getBoxDimensions(this.gridSize);
+                const isRightBorder = (col + 1) % boxCols === 0 && col !== this.gridSize - 1;
+                const isBottomBorder = (row + 1) % boxRows === 0 && row !== this.gridSize - 1;
+                const cellKey = `${row}-${col}`;
+                const isInitial = this.initialBoard[row][col] !== 0;
+                const isLocked = this.lockedCells.has(cellKey);
+                const isSelected = this.selectedCell && this.selectedCell.row === row && this.selectedCell.col === col;
+                
+                let classes = ['sudoku-cell'];
+                
+                if (isRightBorder) classes.push('thick-border-right');
+                if (isBottomBorder) classes.push('thick-border-bottom');
+                
+                if (this.animatingCells.has(`${cellKey}-wrong`)) {
+                    classes.push('wrong');
+                } else if (this.animatingCells.has(`${cellKey}-correct`)) {
+                    classes.push('correct');
+                } else if (this.animatingCells.has(`${cellKey}-hint`)) {
+                    classes.push('hint');
+                } else if (isInitial) {
+                    classes.push('initial');
+                } else if (isLocked) {
+                    classes.push('locked');
+                } else if (isSelected) {
+                    classes.push('selected');
+                }
+                
+                return classes.join(' ');
+            }
+            
+            setGridSize(size) {
+                this.gridSize = size;
+                this.render();
+            }
+            
+            setDifficulty(difficulty) {
+                this.difficulty = difficulty;
+                this.render();
+            }
+            
+            setGameState(state) {
+                if (state !== 'playing') {
+                    this.stopTimer();
+                }
+                this.gameState = state;
+                this.render();
+            }
+            
+            renderMenu() {
+                return `
+                    <div class="glass-panel" style="max-width: 500px; width: 100%;">
+                        <h1 class="title">✨ SUDOKU ✨</h1>
+                        
+                        <div class="section">
+                            <label class="section-label">🎯 Grid Size</label>
+                            <div class="button-grid">
+                                ${[4, 6, 9].map(size => `
+                                    <button class="option-button ${this.gridSize === size ? 'selected' : ''}" 
+                                            onclick="game.setGridSize(${size})">
+                                        ${size}×${size}
+                                    </button>
+                                `).join('')}
+                            </div>
+                        </div>
+                        
+                        <div class="section">
+                            <label class="section-label">⚡ Difficulty</label>
+                            <div class="button-grid">
+                                ${['easy', 'medium', 'hard'].map(diff => `
+                                    <button class="option-button ${this.difficulty === diff ? 'selected' : ''}" 
+                                            onclick="game.setDifficulty('${diff}')">
+                                        ${diff}
+                                    </button>
+                                `).join('')}
+                            </div>
+                        </div>
+                        
+                        <button class="primary-button" onclick="game.startNewGame()">
+                            🚀 START GAME
+                        </button>
+                        
+                        <button class="secondary-button" onclick="game.setGameState('leaderboard')">
+                            🏆 LEADERBOARD
+                        </button>
+                    </div>
+                `;
+            }
+            
+            renderGame() {
+                const settings = this.getDifficultySettings(this.difficulty, this.gridSize);
+                
+                // Fixed cell sizes based on grid size
+                let cellSize, fontSize;
+                switch(this.gridSize) {
+                    case 4:
+                        cellSize = 60;
+                        fontSize = 20;
+                        break;
+                    case 6:
+                        cellSize = 50;
+                        fontSize = 18;
+                        break;
+                    case 9:
+                        cellSize = 40;
+                        fontSize = 16;
+                        break;
+                    default:
+                        cellSize = 40;
+                        fontSize = 16;
+                }
+                
+                // Adjust for mobile
+                if (window.innerWidth < 768) {
+                    cellSize = Math.max(cellSize - 10, 30);
+                    fontSize = Math.max(fontSize - 2, 14);
+                }
+                
+                return `
+                    <div style="width: 100%; max-width: 600px;">
+                        <div class="game-header">
+                            <div class="header-left">
+                                <button class="menu-button" onclick="game.setGameState('menu')">
+                                    ⬅️ MENU
+                                </button>
+                                <div class="header-info">
+                                    ${this.gridSize}×${this.gridSize} • ${this.difficulty.charAt(0).toUpperCase() + this.difficulty.slice(1)}
+                                </div>
+                                <div class="timer">
+                                    <div class="stopwatch-icon"></div>
+                                    <span class="timer-text" id="timer">${this.formatTime(this.currentTime)}</span>
+                                </div>
+                            </div>
+                            
+                            <div class="header-right">
+                                <div class="lives-container">
+                                    <span style="color: #f87171; font-weight: bold;">❤️ Lives:</span>
+                                    <div style="display: flex; gap: 4px;">
+                                        ${Array.from({length: settings.lives}).map((_, i) => `
+                                            <div class="life-heart ${i < this.lives ? 'active' : 'inactive'}"></div>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                                
+                                <button class="hint-button" onclick="game.useHint()" 
+                                        ${this.hintsUsed >= this.maxHints ? 'disabled' : ''}>
+                                    💡 Hints: ${this.maxHints - this.hintsUsed}
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="game-board">
+                            <div class="sudoku-grid" style="grid-template-columns: repeat(${this.gridSize}, ${cellSize}px);">
+                                ${this.board.map((row, rowIndex) =>
+                                    row.map((cell, colIndex) => `
+                                        <input type="number" 
+                                               value="${cell === 0 ? '' : cell}" 
+                                               class="${this.getCellClass(rowIndex, colIndex)}"
+                                               onclick="game.handleCellClick(${rowIndex}, ${colIndex})"
+                                               oninput="game.handleCellChange(${rowIndex}, ${colIndex}, this.value)"
+                                               ${this.initialBoard[rowIndex][colIndex] !== 0 || this.lockedCells.has(`${rowIndex}-${colIndex}`) ? 'disabled' : ''}
+                                               min="1" max="${this.gridSize}"
+                                               style="width: ${cellSize}px; height: ${cellSize}px; font-size: ${fontSize}px;"
+                                        />
+                                    `).join('')
+                                ).join('')}
+                            </div>
+                        </div>
+
+                        <div class="number-input">
+                            <div class="number-panel">
+                                <div class="selection-info ${this.selectedCell ? 'selected' : ''}">
+                                    ${this.selectedCell ? 
+                                        `🎯 Selected: Row ${this.selectedCell.row + 1}, Col ${this.selectedCell.col + 1}` : 
+                                        '✨ Select a cell to enter numbers'
+                                    }
+                                </div>
+                                <div class="number-grid" style="grid-template-columns: repeat(${Math.min(this.gridSize, 5)}, 1fr);">
+                                    ${Array.from({length: this.gridSize}, (_, i) => i + 1).map(num => `
+                                        <button class="number-btn" 
+                                                onclick="game.handleNumberInput(${num})" 
+                                                ${!this.selectedCell ? 'disabled' : ''}>
+                                            ${num}
+                                        </button>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            renderLeaderboard() {
+                return `
+                    <div class="glass-panel" style="max-width: 700px; width: 100%;">
+                        <h1 class="title" style="background: linear-gradient(45deg, #fbbf24, #f59e0b, #d97706); -webkit-background-clip: text; background-clip: text; color: transparent; font-size: clamp(1.8rem, 6vw, 2.5rem);">
+                            🏆 LEADERBOARD 🏆
+                        </h1>
+                        
+                        ${this.leaderboard.length === 0 ? `
+                            <div style="text-align: center; color: rgba(255, 255, 255, 0.7); padding: 30px 10px;">
+                                <div style="font-size: clamp(2.5rem, 8vw, 3.5rem); margin-bottom: 15px;">🎯</div>
+                                <p style="font-size: clamp(1.1rem, 4vw, 1.3rem); font-weight: bold; margin-bottom: 12px;">No Champions Yet!</p>
+                                <p style="font-size: clamp(0.9rem, 3vw, 1rem);">Complete your first puzzle to claim the throne.</p>
+                            </div>
+                        ` : `
+                            <div style="margin: 15px 0; padding: 12px; background: rgba(59, 130, 246, 0.2); border-radius: 12px; border: 1px solid rgba(96, 165, 250, 0.2); text-align: center;">
+                                <p style="font-weight: bold; color: white; margin-bottom: 6px; font-size: clamp(0.8rem, 2.5vw, 0.9rem);">💡 Hint Distribution:</p>
+                                <p style="color: rgba(255, 255, 255, 0.8); margin: 2px 0; font-size: clamp(0.7rem, 2vw, 0.8rem);">• 4×4: Easy(3), Medium(2), Hard(1)</p>
+                                <p style="color: rgba(255, 255, 255, 0.8); margin: 2px 0; font-size: clamp(0.7rem, 2vw, 0.8rem);">• 6×6: Easy(5), Medium(4), Hard(3)</p>
+                                <p style="color: rgba(255, 255, 255, 0.8); margin: 2px 0; font-size: clamp(0.7rem, 2vw, 0.8rem);">• 9×9: Easy(7), Medium(6), Hard(5)</p>
+                            </div>
+                            
+                            <div class="leaderboard-scroll" style="margin: 10px auto; display: flex; justify-content: center;">
+                                <div class="leaderboard-container" style="display: grid; gap: 8px;">
+                                    <style>
+                                        .leaderboard-container {
+                                            grid-template-columns: 60px 70px 80px 90px 60px 100px;
+                                        }
+                                        .leaderboard-scroll {
+                                            overflow-x: auto;
+                                            -webkit-overflow-scrolling: touch;
+                                        }
+                                        @media (max-width: 768px) {
+                                            .leaderboard-container {
+                                                grid-template-columns: 35px 45px 55px 60px 35px 60px !important;
+                                                gap: 3px !important;
+                                                max-width: 300px;
+                                                width: 100%;
+                                            }
+                                            .leaderboard-scroll {
+                                                overflow-x: visible !important;
+                                            }
+                                        }
+                                    </style>
+                                    <!-- Header -->
+                                    <div style="padding: 8px 2px; border-bottom: 2px solid rgba(255, 255, 255, 0.3); font-weight: bold; color: rgba(255, 255, 255, 0.9); text-align: center; font-size: clamp(0.6rem, 1.8vw, 0.75rem);">🏅</div>
+                                    <div style="padding: 8px 2px; border-bottom: 2px solid rgba(255, 255, 255, 0.3); font-weight: bold; color: rgba(255, 255, 255, 0.9); text-align: center; font-size: clamp(0.6rem, 1.8vw, 0.75rem);">📏 GRID</div>
+                                    <div style="padding: 8px 2px; border-bottom: 2px solid rgba(255, 255, 255, 0.3); font-weight: bold; color: rgba(255, 255, 255, 0.9); text-align: center; font-size: clamp(0.6rem, 1.8vw, 0.75rem);">⚡ LEVEL</div>
+                                    <div style="padding: 8px 2px; border-bottom: 2px solid rgba(255, 255, 255, 0.3); font-weight: bold; color: rgba(255, 255, 255, 0.9); text-align: center; font-size: clamp(0.6rem, 1.8vw, 0.75rem);">⏱️ TIME</div>
+                                    <div style="padding: 8px 2px; border-bottom: 2px solid rgba(255, 255, 255, 0.3); font-weight: bold; color: rgba(255, 255, 255, 0.9); text-align: center; font-size: clamp(0.6rem, 1.8vw, 0.75rem);">💡</div>
+                                    <div style="padding: 8px 2px; border-bottom: 2px solid rgba(255, 255, 255, 0.3); font-weight: bold; color: rgba(255, 255, 255, 0.9); text-align: center; font-size: clamp(0.6rem, 1.8vw, 0.75rem);">📅 DATE</div>
+                                    
+                                    ${this.leaderboard.map((entry, index) => `
+                                        <!-- Row ${index + 1} -->
+                                        <div style="padding: 6px 2px; background: rgba(255, 255, 255, 0.05); border-radius: 6px; font-weight: 900; font-size: clamp(0.7rem, 2vw, 0.8rem); color: ${index === 0 ? '#fbbf24' : index === 1 ? '#e5e7eb' : index === 2 ? '#d97706' : '#60a5fa'}; text-align: center; margin: 2px 0;">
+                                            #${index + 1}
+                                        </div>
+                                        <div style="padding: 6px 2px; background: rgba(255, 255, 255, 0.05); border-radius: 6px; font-weight: bold; color: white; text-align: center; font-size: clamp(0.65rem, 1.8vw, 0.75rem); margin: 2px 0;">${entry.gridSize}×${entry.gridSize}</div>
+                                        <div style="padding: 6px 2px; background: rgba(255, 255, 255, 0.05); border-radius: 6px; text-transform: capitalize; font-weight: bold; color: white; text-align: center; font-size: clamp(0.6rem, 1.6vw, 0.7rem); margin: 2px 0;">${entry.difficulty}</div>
+                                        <div style="padding: 6px 2px; background: rgba(255, 255, 255, 0.05); border-radius: 6px; font-family: 'Courier New', monospace; font-weight: bold; color: white; text-align: center; font-size: clamp(0.65rem, 1.8vw, 0.75rem); margin: 2px 0;">${this.formatTime(entry.time)}</div>
+                                        <div style="padding: 6px 2px; background: rgba(255, 255, 255, 0.05); border-radius: 6px; font-weight: bold; color: white; text-align: center; font-size: clamp(0.65rem, 1.8vw, 0.75rem); margin: 2px 0;">${entry.hintsUsed}</div>
+                                        <div style="padding: 6px 2px; background: rgba(255, 255, 255, 0.05); border-radius: 6px; opacity: 0.8; color: white; text-align: center; font-size: clamp(0.6rem, 1.6vw, 0.7rem); margin: 2px 0;">${entry.date}</div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        `}
+                        
+                        <button class="primary-button" onclick="game.setGameState('menu')" style="margin-top: 15px; font-size: clamp(0.9rem, 3vw, 1.1rem); padding: clamp(10px, 3vw, 14px);">
+                            ⬅️ BACK TO MENU
+                        </button>
+                    </div>
+                `;
+            }
+            renderWon() {
+                return `
+                    <div class="glass-panel" style="max-width: 500px; width: 100%;">
+                        <h1 class="title" style="background: linear-gradient(45deg, #34d399, #10b981, #059669); -webkit-background-clip: text; background-clip: text; color: transparent;">
+                            🎉 VICTORY! 🎉
+                        </h1>
+                        
+                        <div style="background: rgba(16, 185, 129, 0.2); border: 1px solid rgba(52, 211, 153, 0.2); border-radius: 16px; padding: 15px; margin-bottom: 25px;">
+                            <div style="font-size: clamp(1.2rem, 4vw, 1.5rem); font-weight: bold; color: white; margin-bottom: 12px; text-align: center;">Puzzle Conquered! ⚡</div>
+                            <div style="display: grid; grid-template-columns: 1fr; gap: 8px; color: rgba(255, 255, 255, 0.9); font-size: clamp(0.85rem, 3vw, 1rem); text-align: center;">
+                                <div>📏 Grid: <span style="font-weight: bold; color: white;">${this.gridSize}×${this.gridSize}</span></div>
+                                <div>⚡ Difficulty: <span style="font-weight: bold; color: white; text-transform: capitalize;">${this.difficulty}</span></div>
+                                <div>⏱️ Time: <span style="font-weight: bold; color: white;">${this.completionTime ? this.formatTime(this.completionTime) : 'N/A'}</span></div>
+                                <div>💡 Hints Used: <span style="font-weight: bold; color: white;">${this.hintsUsed}/${this.maxHints}</span></div>
+                                <div style="text-align: center; color: #6ee7b7; font-weight: bold; margin-top: 8px; font-size: clamp(0.8rem, 2.5vw, 0.9rem);">
+                                    Outstanding performance! 🏆
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <button class="primary-button" onclick="game.startNewGame()">
+                            🎮 PLAY AGAIN
+                        </button>
+                        
+                        <button class="secondary-button" onclick="game.setGameState('leaderboard')">
+                            🏆 LEADERBOARD
+                        </button>
+                        
+                        <button class="menu-button" onclick="game.setGameState('menu')" style="width: 100%; margin-top: 12px;">
+                            ⬅️ MENU
+                        </button>
+                    </div>
+                `;
+            }
+            
+            renderGameOver() {
+                return `
+                    <div class="glass-panel" style="max-width: 500px; width: 100%;">
+                        <h1 class="title" style="background: linear-gradient(45deg, #f87171, #ef4444, #dc2626); -webkit-background-clip: text; background-clip: text; color: transparent;">
+                            💀 GAME OVER!
+                        </h1>
+                        
+                        <div style="background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(248, 113, 113, 0.2); border-radius: 16px; padding: 15px; margin-bottom: 25px;">
+                            <div style="font-size: clamp(1.2rem, 4vw, 1.5rem); font-weight: bold; color: white; margin-bottom: 12px; text-align: center;">Lives Depleted! 💥</div>
+                            <div style="display: grid; grid-template-columns: 1fr; gap: 8px; color: rgba(255, 255, 255, 0.9); font-size: clamp(0.85rem, 3vw, 1rem); text-align: center;">
+                                <div>📏 Grid: <span style="font-weight: bold; color: white;">${this.gridSize}×${this.gridSize}</span></div>
+                                <div>⚡ Difficulty: <span style="font-weight: bold; color: white; text-transform: capitalize;">${this.difficulty}</span></div>
+                                <div>💡 Hints Used: <span style="font-weight: bold; color: white;">${this.hintsUsed}/${this.maxHints}</span></div>
+                                <div style="text-align: center; color: #fca5a5; font-weight: bold; margin-top: 8px; font-size: clamp(0.8rem, 2.5vw, 0.9rem);">
+                                    Keep practicing, champion! 🔥
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <button class="primary-button" onclick="game.startNewGame()">
+                            🔄 TRY AGAIN
+                        </button>
+                        
+                        <button class="secondary-button" onclick="game.setGameState('leaderboard')">
+                            🏆 LEADERBOARD
+                        </button>
+                        
+                        <button class="menu-button" onclick="game.setGameState('menu')" style="width: 100%; margin-top: 12px;">
+                            ⬅️ MENU
+                        </button>
+                    </div>
+                `;
+            }
+            
+            handleCellChange(row, col, value) {
+                const cellKey = `${row}-${col}`;
+                if (this.initialBoard[row][col] !== 0 || this.lockedCells.has(cellKey)) return;
+                
+                const num = parseInt(value) || 0;
+                this.selectedCell = { row, col };
+                this.handleNumberInput(num);
+            }
+            
+            render() {
+                const app = document.getElementById('app');
+                
+                switch(this.gameState) {
+                    case 'menu':
+                        app.innerHTML = this.renderMenu();
+                        break;
+                    case 'playing':
+                        app.innerHTML = this.renderGame();
+                        break;
+                    case 'leaderboard':
+                        app.innerHTML = this.renderLeaderboard();
+                        break;
+                    case 'gameOver':
+                        app.innerHTML = this.renderGameOver();
+                        break;
+                    case 'won':
+                        app.innerHTML = this.renderWon();
+                        break;
+                }
+            }
+        }
+        
+        let game;
+        document.addEventListener('DOMContentLoaded', function() {
+            game = new SudokuGame();
+            window.game = game;
+            
+            let resizeTimeout;
+            window.addEventListener('resize', function() {
+                clearTimeout(resizeTimeout);
+                resizeTimeout = setTimeout(function() {
+                    if (game && game.gameState === 'playing') {
+                        game.render();
+                    }
+                }, 250);
+            });
+            
+            let lastTouchEnd = 0;
+            document.addEventListener('touchend', function (event) {
+                const now = (new Date()).getTime();
+                if (now - lastTouchEnd <= 300) {
+                    event.preventDefault();
+                }
+                lastTouchEnd = now;
+            }, false);
+            
+            document.addEventListener('touchmove', function(e) {
+                if (game && game.gameState === 'playing') {
+                    const target = e.target;
+                    if (!target.closest('.sudoku-grid') && !target.closest('.number-grid')) {
+                        e.preventDefault();
+                    }
+                }
+            }, { passive: false });
+        });
+    </script>
+</body>
+</html>
